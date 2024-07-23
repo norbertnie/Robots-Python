@@ -1,6 +1,10 @@
 import sys
 import random
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QListWidget, \
+    QStackedWidget, QComboBox, QHBoxLayout, QMessageBox, QGridLayout, QScrollArea, QFrame
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtCore import Qt
+
 
 class Robot:
     def __init__(self, id, name, status, battery_level, lokalizacja, pozycja, magazyn, stan, image_path):
@@ -13,6 +17,7 @@ class Robot:
         self.magazyn = magazyn
         self.stan = stan
         self.image_path = image_path
+
 
 class RobotManager(QMainWindow):
     def __init__(self):
@@ -64,33 +69,82 @@ class RobotManager(QMainWindow):
         self.update_button.clicked.connect(self.update_robot)
         self.top_layout.addWidget(self.update_button)
 
-        self.robot_list = QListWidget()
-        self.layout.addWidget(self.robot_list)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_content = QWidget()
+        self.scroll_layout = QGridLayout(self.scroll_content)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.layout.addWidget(self.scroll_area)
 
     def load_robots(self):
         self.robots = [
             Robot(1, 'Robot 1', 'Dostępny', 100, 'Location 1', 'Position 1', 'Magazyn 1', 'Stan 1', 'robot_icon.png'),
-            Robot(2, 'Robot 2', 'Niedostępny zajęty', 90, 'Location 2', 'Position 2', 'Magazyn 2', 'Stan 2', 'robot_icon.png'),
+            Robot(2, 'Robot 2', 'Niedostępny zajęty', 90, 'Location 2', 'Position 2', 'Magazyn 2', 'Stan 2',
+                  'robot_icon.png'),
             # Add more robots here
         ]
-        self.update_robot_list()
+        self.update_robot_selector()
+        self.update_robot_tiles()
+
+    def update_robot_selector(self):
+        self.robot_selector.clear()
         self.robot_selector.addItem('Wszystkie')
         for robot in self.robots:
             self.robot_selector.addItem(robot.name)
 
-    def update_robot_list(self):
-        self.robot_list.clear()
-        for robot in self.robots:
-            self.robot_list.addItem(f'{robot.name} - {robot.status}')
+    def update_robot_tiles(self):
+        for i in reversed(range(self.scroll_layout.count())):
+            widget = self.scroll_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        robots_to_display = self.robots if self.selected_robot is None else [self.selected_robot]
+
+        for i, robot in enumerate(robots_to_display):
+            tile = self.create_robot_tile(robot)
+            self.scroll_layout.addWidget(tile, i // 2, i % 2)
+
+    def create_robot_tile(self, robot):
+        tile = QFrame()
+        tile.setFrameShape(QFrame.Box)
+        tile.setLineWidth(2)
+        layout = QVBoxLayout(tile)
+        layout.setAlignment(Qt.AlignTop)
+
+        image_label = QLabel()
+        pixmap = QPixmap(robot.image_path)
+        image_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
+        layout.addWidget(image_label, alignment=Qt.AlignCenter)
+
+        name_label = QLabel(f'Name: {robot.name}')
+        layout.addWidget(name_label)
+
+        status_label = QLabel(f'Status: {robot.status}')
+        layout.addWidget(status_label)
+
+        battery_label = QLabel(f'Battery Level: {robot.battery_level}%')
+        layout.addWidget(battery_label)
+
+        location_label = QLabel(f'Lokalizacja: {robot.lokalizacja}')
+        layout.addWidget(location_label)
+
+        position_label = QLabel(f'Pozycja: {robot.pozycja}')
+        layout.addWidget(position_label)
+
+        magazyn_label = QLabel(f'Magazyn: {robot.magazyn}')
+        layout.addWidget(magazyn_label)
+
+        stan_label = QLabel(f'Stan: {robot.stan}')
+        layout.addWidget(stan_label)
+
+        return tile
 
     def on_robot_selected(self, index):
         if index == 0:
             self.selected_robot = None
-            self.update_robot_list()
         else:
             self.selected_robot = self.robots[index - 1]
-            self.robot_list.clear()
-            self.robot_list.addItem(f'{self.selected_robot.name} - {self.selected_robot.status}')
+        self.update_robot_tiles()
 
     def select_previous_robot(self):
         current_index = self.robot_selector.currentIndex()
@@ -111,9 +165,18 @@ class RobotManager(QMainWindow):
             self.selected_robot.pozycja = 'Updated Position'
             self.selected_robot.magazyn = 'Updated Magazyn'
             self.selected_robot.stan = 'Updated Stan'
-            self.update_robot_list()
+            self.update_robot_tiles()
         else:
-            QMessageBox.information(self, 'Info', 'Select a robot to update')
+            for robot in self.robots:
+                new_statuses = [status for status in self.statuses if status != robot.status]
+                robot.status = random.choice(new_statuses)
+                robot.battery_level = max(0, robot.battery_level - 10)
+                robot.lokalizacja = 'Updated Location'
+                robot.pozycja = 'Updated Position'
+                robot.magazyn = 'Updated Magazyn'
+                robot.stan = 'Updated Stan'
+            self.update_robot_tiles()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
