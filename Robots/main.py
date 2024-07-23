@@ -1,8 +1,9 @@
 import sys
+import os
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QListWidget, \
-    QStackedWidget, QComboBox, QHBoxLayout, QMessageBox, QGridLayout, QScrollArea, QFrame
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QComboBox, \
+    QHBoxLayout, QGridLayout, QScrollArea, QFrame
+from PyQt5.QtGui import QPixmap, QImage, QColor
 from PyQt5.QtCore import Qt
 
 
@@ -34,6 +35,20 @@ class RobotManager(QMainWindow):
             "Niedostępny zajęty",
             "Niedostępny Potrzebny asystent"
         ]
+
+        self.status_to_image = {
+            "Dostępny": os.path.abspath("./.venv/images/check.png"),
+            "W trakcie akcji": os.path.abspath("./.venv/images/arrows.png"),
+            "Niedostępny zajęty": os.path.abspath("./.venv/images/warning.png"),
+            "Niedostępny Potrzebny asystent": os.path.abspath("./.venv/images/error.png")
+        }
+
+        self.status_to_color = {
+            "Dostępny": "green",
+            "W trakcie akcji": "blue",
+            "Niedostępny zajęty": "orange",
+            "Niedostępny Potrzebny asystent": "red"
+        }
 
         self.initUI()
 
@@ -78,9 +93,12 @@ class RobotManager(QMainWindow):
 
     def load_robots(self):
         self.robots = [
-            Robot(1, 'Robot 1', 'Dostępny', 100, 'Location 1', 'Position 1', 'Magazyn 1', 'Stan 1', 'robot_icon.png'),
+            Robot(1, 'Robot 1', 'Dostępny', 100, 'Location 1', 'Position 1', 'Magazyn 1', 'Stan 1',
+                  os.path.abspath("./.venv/images/robot_1_black.png")),
             Robot(2, 'Robot 2', 'Niedostępny zajęty', 90, 'Location 2', 'Position 2', 'Magazyn 2', 'Stan 2',
-                  'robot_icon.png'),
+                  os.path.abspath("./.venv/images/robot_2_black.png")),
+            Robot(3, 'Robot 3', 'Niedostępny Potrzebny asystent', 80, 'Location 3', 'Position 3', 'Magazyn 3', 'Stan 3',
+                  os.path.abspath("./.venv/images/robot_3_black.png")),
             # Add more robots here
         ]
         self.update_robot_selector()
@@ -111,9 +129,13 @@ class RobotManager(QMainWindow):
         layout = QVBoxLayout(tile)
         layout.setAlignment(Qt.AlignTop)
 
+        border_color = self.status_to_color.get(robot.status, "black")
+        tile.setStyleSheet(f"QFrame {{ border: 2px solid {border_color}; }}")
+
         image_label = QLabel()
         pixmap = QPixmap(robot.image_path)
-        image_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
+        if not pixmap.isNull():
+            image_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
         layout.addWidget(image_label, alignment=Qt.AlignCenter)
 
         name_label = QLabel(f'Name: {robot.name}')
@@ -121,6 +143,12 @@ class RobotManager(QMainWindow):
 
         status_label = QLabel(f'Status: {robot.status}')
         layout.addWidget(status_label)
+
+        status_image_label = QLabel()
+        status_pixmap = QPixmap(self.status_to_image.get(robot.status))
+        if not status_pixmap.isNull():
+            status_image_label.setPixmap(status_pixmap.scaled(20, 20, Qt.KeepAspectRatio))
+        layout.addWidget(status_image_label, alignment=Qt.AlignCenter)
 
         battery_label = QLabel(f'Battery Level: {robot.battery_level}%')
         layout.addWidget(battery_label)
